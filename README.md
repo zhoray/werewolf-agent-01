@@ -1,45 +1,22 @@
-# Werewolf agent — make.fun werewolf-agent-01
+# Moonlit Pact
 
-A hand-written, deterministic Werewolf player for the make.fun
-`werewolf-agent-01` competition. It holds one seat in each of 30 games per
-trial (15 as a werewolf, 5 each as seer, doctor and villager) against seven
-house players, talking to the game environment at `MAKEFUN_ENV_URL`.
-
-It makes **no model calls**: every decision is a pure function of that game's
-own view, recomputed from scratch for each pending decision, with any
-randomness drawn from a PRNG seeded by `MAKEFUN_TRIAL_SEED`, the game number
-and the view itself. No wall clock, no shared state between games — so the
-replay, which serves the same views back, produces the same actions byte for
-byte.
+Moonlit Pact is a deterministic, zero-model-call Werewolf agent for `werewolf-agent-01`. The entry point is `main.ts`; it reads each game view from the environment, rebuilds its information from the log, and answers pending decisions locally.
 
 ## How it plays
 
-- **Seer** — inspects the most informative seat first (a rival claimant, then
-  anyone vouched for, then the table's suspicions). Reveals with the full
-  record the day a living werewolf is known, on day 2 once two checks are in,
-  when a rival claim contradicts its results, or when about to be exiled —
-  and then leads the vote daily.
-- **Doctor** — protects the credible revealed seer first, else the likeliest
-  kill target (trusted, vocal villagers), never wasting a protection.
-- **Villager** — keeps the full public record: every claim, inspection report
-  spoken at the table, vote and revealed role. It scores claimants (a report
-  confirmed by a revealed role counts most; claiming first counts; claiming
-  only after being named is read as a caught wolf's counterclaim), exposes
-  proven fakes, follows a credible seer — including a dead seer whose role
-  flip confirmed their reports — blocks exiles of players the village cannot
-  afford to lose, and abstains on day 1 when there is no real signal.
-- **Werewolf** — always agrees with its partner's night pick (a split vote
-  kills nobody), hunts the seer and the town's leaders, speaks and votes like
-  a villager, buses its partner only when a credible seer has outed them, and
-  — when the real seer is dead — can fake a seer claim with a consistent
-  fabricated record to steer an exile.
+- **Werewolf:** coordinates night kills with its partner, avoids targeting the partner, and votes to advance a safe village-side wagon or distance itself from a partner under credible pressure.
+- **Seer:** inspects living unknown players and reveals checks when it finds a wolf or the village needs direction.
+- **Doctor:** protects an outed seer when available, otherwise protects a likely village voice.
+- **Villager:** tracks seer claims, checks, voting patterns, and speeches; votes on confirmed information first and resolves competing seer claims within the claimant pair.
+
+All tie-breaking is derived from `MAKEFUN_TRIAL_SEED` and the game number. The agent makes no model calls and carries no state between games.
 
 ## Run
 
-Started by the grader as `node /bot/main.ts` on Node 22, standard library
-only. It reads `MAKEFUN_ENV_URL` and `MAKEFUN_TRIAL_SEED` from the
-environment and exits once the trial's games are all over.
+Use Node 22 with `MAKEFUN_ENV_URL` set to the environment server URL and `MAKEFUN_TRIAL_SEED` set to the trial seed:
 
-## License
-
-MIT — see `LICENSE`.
+```sh
+MAKEFUN_ENV_URL=http://127.0.0.1:8080 \
+MAKEFUN_TRIAL_SEED=your-trial-seed \
+node main.ts
+```
